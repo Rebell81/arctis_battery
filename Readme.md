@@ -1,5 +1,8 @@
-# windows build
+SteelSeries Arctis 7 battery status tray icon
 
+
+
+# windows build
 1) install gcc
 
 install choco https://chocolatey.org/install
@@ -15,8 +18,9 @@ go run -race .
 ```
 
 3) reboot
-
-4) build
+4) If u need, change pid data at `main.go`
+   ![img_1.png](img_1.png)
+5) build
 
 ```go build -ldflags -H=windowsgui```
 
