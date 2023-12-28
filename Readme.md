@@ -1,5 +1,13 @@
 SteelSeries Arctis 1/7/9/Pro battery status tray icon for Windows/MacOS
 
+# Windows
+
+![img.png](img.png)
+
+# MacOS
+
+![img_2.png](img_2.png)
+
 # windows build
 1) install gcc
 
@@ -21,8 +29,3 @@ go run -race .
 5) build
 
 ```go build -ldflags -H=windowsgui```
-
-![img.png](img.png)
-
-MacOS
-![img_2.png](img_2.png)
