@@ -11,14 +11,24 @@ import (
 
 	"github.com/getlantern/systray"
 	"github.com/sstallion/go-hid"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
 	selectedHidDevice *hid.Device
 	errorNotConnected = errors.New("headset not connected")
+	wasDisconnected   = false
 )
 
 func main() {
+	log.SetOutput(&lumberjack.Logger{
+		Filename:   "log.log",
+		MaxSize:    5, // megabytes
+		MaxBackups: 3,
+		MaxAge:     14,    //days
+		Compress:   false, // disabled by default
+	})
+
 	initHideDevice()
 
 	systray.Run(onReady, nil)
@@ -39,26 +49,43 @@ func onReady() {
 
 func loop() {
 	for {
-		batValue, err := getBattery(selectedHidDevice)
-		if err != nil {
-			if errors.Is(err, errorNotConnected) {
-				batValue = 0
-			} else {
-				log.Fatal(err)
-			}
-		}
-
-		var bytes = read(fmt.Sprintf("Icons/%d.ico", batValue))
-		systray.SetIcon(bytes)
-
 		time.Sleep(time.Duration(5) * time.Second)
+
+		if wasDisconnected {
+			reInit()
+			time.Sleep(time.Duration(1) * time.Second)
+			setBat()
+
+			continue
+		}
+		setBat()
 	}
+}
+
+func setBat() {
+	batValue, err := getBattery(selectedHidDevice)
+	if err != nil {
+		if errors.Is(err, errorNotConnected) {
+			batValue = 0
+			wasDisconnected = true
+			log.Println(fmt.Sprintf("bat: %d	| err: %s", batValue, err))
+		} else {
+			log.Println(fmt.Sprintf("bat: %d	| err: %s", batValue, err))
+		}
+	} else {
+		wasDisconnected = false
+		log.Println(fmt.Sprintf("bat: %d", batValue))
+	}
+
+	var bytes = read(fmt.Sprintf("Icons/%d.ico", batValue))
+	systray.SetIcon(bytes)
 }
 
 func read(fileName string) []byte {
 	file, err := os.Open(fileName)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(fmt.Errorf("err: %w", err))
+
 		return nil
 	}
 	defer file.Close()
@@ -66,7 +93,8 @@ func read(fileName string) []byte {
 	// Get the file size
 	stat, err := file.Stat()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(fmt.Errorf("err: %w", err))
+
 		return nil
 	}
 
@@ -74,7 +102,8 @@ func read(fileName string) []byte {
 	bs := make([]byte, stat.Size())
 	_, err = bufio.NewReader(file).Read(bs)
 	if err != nil && err != io.EOF {
-		fmt.Println(err)
+		log.Println(fmt.Errorf("err: %w", err))
+
 		return nil
 	}
 
@@ -131,7 +160,7 @@ func initHideDevice() {
 	for _, hidDevice := range steelHids {
 		device, err := hid.OpenPath(hidDevice.Path)
 		if err != nil {
-			log.Fatal("Unable to connect to headset receiver. Is it connected?")
+			log.Println(fmt.Errorf("unable to connect to headset receiver err: %w", err))
 		}
 
 		_, err = getBattery(device)
@@ -144,7 +173,7 @@ func initHideDevice() {
 
 			err = device.Close()
 			if err != nil {
-				log.Fatalf("Error when closing HID library: %v", err)
+				log.Println(fmt.Errorf("err: %w", err))
 			}
 
 			continue
@@ -155,4 +184,14 @@ func initHideDevice() {
 		}
 
 	}
+}
+
+func reInit() {
+	log.Println("reconnecting...")
+	err := selectedHidDevice.Close()
+	if err != nil {
+		log.Println(fmt.Errorf("err: %w", err))
+	}
+
+	initHideDevice()
 }

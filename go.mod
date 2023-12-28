@@ -5,6 +5,7 @@ go 1.21
 require (
 	github.com/getlantern/systray v1.2.2
 	github.com/sstallion/go-hid v0.14.1
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
 require (
