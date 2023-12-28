@@ -1,6 +1,4 @@
-SteelSeries Arctis 7 battery status tray icon
-
-
+SteelSeries Arctis 1/7/9/Pro battery status tray icon for Windows/MacOS
 
 # windows build
 1) install gcc
@@ -25,3 +23,6 @@ go run -race .
 ```go build -ldflags -H=windowsgui```
 
 ![img.png](img.png)
+
+MacOS
+![img_2.png](img_2.png)
